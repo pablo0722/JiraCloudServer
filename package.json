@@ -1,0 +1,41 @@
+{
+  "name": "work-logger",
+  "version": "1.0.0",
+  "description": "Program to facilitate logging hours at work in different tasks",
+  "main": "index.js",
+  "scripts": {
+    "all": "npm run build; npm run start",
+    "build": "tsc",
+    "start": "node ./build/index"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/pablo0722/work-logger.git"
+  },
+  "keywords": [
+    "worklog",
+    "worklogging",
+    "worklogger",
+    "work-log",
+    "work-logging",
+    "work-logger",
+    "jira"
+  ],
+  "author": "Pablo Rodrigo D'Angelo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pablo0722/work-logger/issues"
+  },
+  "homepage": "https://github.com/pablo0722/work-logger#readme",
+  "dependencies": {
+    "@types/inquirer": "^8.2.1",
+    "@types/node-fetch": "^2.6.1",
+    "inquirer": "^8.2.2",
+    "node-fetch": "^3.2.3",
+    "pkg-fetch": "^3.3.0",
+    "typescript": "^4.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.24"
+  }
+}

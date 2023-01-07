@@ -1,0 +1,12 @@
+[
+    "<FAMPPLTDEV-1974>: Support for BDSound library integration",
+    "<FAMPPLTDEV-2078>: Investigate the issue of sample rate in first CP session",
+    "<FAMPPLTDEV-1966>: Splash screen: Video Glitch in splash screen (after FPS changed to 60).",
+    "<FAMPPLTDEV-1974>: Support for BDSound library integration",
+    "<FAMPPLTDEV-2066>: CarPlay audio gets cut out after priority increased when RVC is on",
+    "<FAMPPLTDEV-2036>: Try enhace Carplay for audio playback sample rate",
+    "<FAMPPLTDEV-2071>: RVC not working when create snapshot with RVC connected",
+    "<FAMPPLTDEV-2072>: CarPlay audio gets cut out after priority increased when RVC is on. Final solution",
+    "<FAMPPLTDEV-2079>: BDSound Remove Resamplers",
+    "<FAMPVW-104>: Search for possible suppliers of Dead Reckoning algorithm"
+]
