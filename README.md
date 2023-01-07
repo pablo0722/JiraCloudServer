@@ -1,0 +1,2 @@
+# JiraCloudServer
+Automatization for JiraCloud
