@@ -2,8 +2,7 @@
  * IMPORTS
  *****************************************************************************/
 
-import { Menu, create, createBulk, startProgram } from './private/menu';
-import { createCommonIssuesWorklog, createWorklog, createDaySelect, createIssuesMenu } from './private/customMenu';
+import { _back, _cancel, _end, Menu, create, startProgram } from './private/menu.js';
 
 
 
@@ -14,15 +13,13 @@ import { createCommonIssuesWorklog, createWorklog, createDaySelect, createIssues
  *****************************************************************************/
 
 export {
+    // Const Strings
+    _back,
+    _cancel,
+    _end,
+
     // Standard
     Menu,
     create,
-    createBulk,
     startProgram,
-
-    // Custom
-    createCommonIssuesWorklog,
-    createWorklog,
-    createDaySelect,
-    createIssuesMenu
 };

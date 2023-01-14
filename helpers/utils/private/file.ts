@@ -3,7 +3,7 @@
  *****************************************************************************/
 
 import * as fs from 'fs';
-import {extend} from './dictionary';
+import {extend} from './dictionary.js';
 
 
 

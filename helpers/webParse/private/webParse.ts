@@ -18,7 +18,8 @@
  * IMPORTS
  *****************************************************************************/
 
-import { date, file, log, web } from '../../utils/index'
+import { date, file, log, web } from '../../utils/index.js'
+import { storage } from '../../utilsh/index.js'
 
 
 
@@ -169,6 +170,12 @@ type JiraCredentials = {
     api_key: string
 };
 
+type Vote = "XS" | "S" | "M" | "L" | "XL";
+
+type Votation = {
+    [key: string]: Vote;
+};
+
 
 
 
@@ -201,6 +208,7 @@ const commonFields = [
  *****************************************************************************/
 
 let _credentials: JiraCredentials;
+let _votation_running: boolean = false;
 
 
 
@@ -294,6 +302,8 @@ async function getJiraFromUrl(url: string): Promise<string> {
             'Content-Type': 'application/json'
             // 'Content-Type': 'application/x-www-form-urlencoded',
     };
+
+    console.log(headers);
     
     ret = await web.getData(url, headers);
     
@@ -324,6 +334,23 @@ async function postJiraFromUrl(url: string, data: any): Promise<string> {
 /*****************************************************************************
  * PUBLIC FUNCTIONS
  *****************************************************************************/
+
+function startVotationGetter(votation_name: string, func: (votation: Votation) => void): void {
+    _votation_running = true;
+    getVotation(func, votation_name);
+}
+
+function stopVotationGetter(): void {
+    _votation_running = false;
+}
+let i=0;
+async function getVotation(func: (votation: Votation) => void, votation_name: string): Promise<void> {
+    while(_votation_running) {
+        let response: Votation = JSON.parse(await storage.get(`scrumpoker_celda_${votation_name}`));
+        func(response);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+}
 
 function setCredentials(credentials: JiraCredentials) {
     _credentials = credentials;
@@ -488,7 +515,16 @@ async function postLogWork(
  *****************************************************************************/
 
 export {
+    // TYPE
+    Vote,
+    Votation,
+
+    // THREAD
+    startVotationGetter,
+    stopVotationGetter,
+
     // GET
+    getVotation,
     getCredentials,
     getMyOpenSprintIssues,
     getMySprintIssues,

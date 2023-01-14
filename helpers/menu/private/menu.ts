@@ -2,9 +2,10 @@
  * IMPORTS
  *****************************************************************************/
 
-import * as inquirer from 'inquirer';
-import { log } from '../../utils/index';
-
+import inquirer from 'inquirer';
+import { hasUncaughtExceptionCaptureCallback } from 'process';
+import { log } from '../../utils/index.js';
+    
 
 
 
@@ -16,56 +17,33 @@ import { log } from '../../utils/index';
 type Answer = {[key:string]: string|string[]};
 type NextFunc = (answer: Answer) => string;
 type MenuFunc = (itemName: string, nextItem: string) => string;
-type ChoiceFunc = (itemName: string, nextItem: string[]) => string;
+type NextAnswer = {nextMenu: Menu | null, back: number, end: boolean};
+type AnswerFunc = (nextItem: string|string[]) => NextAnswer;
+type CreateFunc = (prompt: any) => void;
 type MenuDict = {[key:string]: Menu};
 type MenuType = 'list' | 'checkbox' | 'radio' | any;
+type AnswerCallback = (p: Menu) => (Menu | null);
+type CreateCallback = ((p: any) => void) | null;
 
 class Menu {
-    type: string;
     name: string;
+    type: string;
     message: string;
     choices: string[];
     loop: boolean;
-    hasFuncBack: boolean;
-    hasFuncNext: boolean;
-    hasFuncChoiceNext: boolean;
-    menuFunc: MenuFunc;
-    choiceFunc: ChoiceFunc;
+    answerFunc: AnswerFunc;
+    createFunc: CreateFunc;
     
     protected static menues: {[key: string]: Menu};
     
-    constructor(name: string, type: MenuType, message: string, choices: string[]) {
+    constructor(type: MenuType, message: string, choices: string[], createFunc: CreateFunc, answerFunc: AnswerFunc) {
+        this.name = `${type}: ${message}`;
         this.type = type;
-        this.name = name;
         this.message = message;
         this.choices = choices;
         this.loop = false;
-        this.hasFuncBack = false;
-        this.hasFuncNext = false;
-        this.hasFuncChoiceNext = false;
-        this.menuFunc = () => {throw new Error(`func not defined for menu "${this.name}"`)};
-        this.choiceFunc = () => {throw new Error(`func not defined for menu "${this.name}"`)};
-    }
-    
-    addFuncBack(menuFunc: MenuFunc) {
-        this.menuFunc = menuFunc;
-        this.hasFuncBack = true;
-        this.hasFuncNext = false;
-        this.hasFuncChoiceNext = false;
-    }
-    
-    addFuncNext(menuFunc: MenuFunc) {
-        this.menuFunc = menuFunc;
-        this.hasFuncBack = false;
-        this.hasFuncNext = true;
-        this.hasFuncChoiceNext = false;
-    }
-    
-    addFuncChoiceNext(choiceFunc: ChoiceFunc) {
-        this.choiceFunc = choiceFunc;
-        this.hasFuncBack = false;
-        this.hasFuncNext = false;
-        this.hasFuncChoiceNext = true;
+        this.answerFunc = answerFunc;
+        this.createFunc = createFunc;
     }
 }
 
@@ -78,8 +56,8 @@ class Menu {
  *****************************************************************************/
 
 const _end: string = '\n<SALIR>';
-
 const _back: string = '<ATRÁS>';
+const _cancel: string = inquirer.cancelString;
 
 
 
@@ -91,7 +69,7 @@ const _back: string = '<ATRÁS>';
 
 let _firstMenu: Menu;
 let _prevMenues: Menu[] = [];
-let _allMenues: MenuDict = {};
+let _currentMenu: Menu | null = null;
 
 
 
@@ -101,11 +79,10 @@ let _allMenues: MenuDict = {};
  * PRIVATE FUNCTIONS
  *****************************************************************************/
 
-function _create(menuName: string, type: MenuType, message: string, choices: string[]): Menu {    
-    let newMenu = new Menu(menuName, type, message, choices);
-    
-    _allMenues[menuName] = newMenu;
-    
+function _create(type: MenuType, message: string, choices: string[],
+                 createFunc: CreateFunc, answerFunc: AnswerFunc): Menu {    
+    let newMenu = new Menu(type, message, choices, createFunc, answerFunc);
+        
     return newMenu;
 }
 
@@ -121,27 +98,14 @@ function _makeFirst(menu: Menu): void {
  * PUBLIC FUNCTIONS
  *****************************************************************************/
 
-function create(menuName: string, type: MenuType, message: string, choices: string[] = []): Menu {
+function create(type: MenuType, message: string, choices: string[],
+                createFunc: CreateFunc, answerFunc: AnswerFunc): Menu {
     let createdMenu: Menu;
     if(type=='list') {
-        createdMenu = _create(menuName, type, message, choices.concat([_back, _end]));
+        createdMenu = _create(type, message, choices.concat([_back, _end]), createFunc, answerFunc);
     } else {
-        createdMenu = _create(menuName, type, message, choices);
+        createdMenu = _create(type, message, choices, createFunc, answerFunc);
     }
-    
-    return createdMenu;
-}
-
-function createBulk(menuNames: string[], type: MenuType, message: string, choices: string[] = []): Menu {
-    let createdMenu: Menu;
-    if(type=='list') {
-        createdMenu = _create(menuNames[0], type, message, choices.concat([_back, _end]));
-    } else {
-        createdMenu = _create(menuNames[0], type, message, choices);
-    }
-    menuNames.forEach(e => {
-        _allMenues[e] = createdMenu;
-    });
     
     return createdMenu;
 }
@@ -150,74 +114,57 @@ function handleAnswer(ans: Answer): void {
     log.dump.d({ans});
     let key: string = Object.keys(ans)[0];
     log.dump.d({key});
-    let thisMenu: Menu = _allMenues[key];
-    log.dump.d({thisMenu});
-    let next: string|string[] = Object.values(ans)[0];
-    let nextMenuName: string;
-    if(Array.isArray(next)){
-        let nextChoiceName: string[] = next;
-        log.dump.d({nextChoiceName});
-        nextMenuName = thisMenu.choiceFunc(thisMenu.name, nextChoiceName);
-    }else{
-        nextMenuName = next;
-        log.dump.d({nextMenuName});
+    if(!_currentMenu) {
+        throw new Error("Current menu cannot be null");;
     }
-    let gotoNext: boolean = false;
-    
-    if(nextMenuName == _end) {
+    let thisMenu: Menu = _currentMenu;
+    log.dump.d({thisMenu});
+    let answer: string|string[] = Object.values(ans)[0];
+    log.dump.d({answer});
+    let next: NextAnswer;
+    next = thisMenu.answerFunc(answer);
+
+    if(next.end || (!next.back && !next.nextMenu)) {
         log.i('Gracias, vuelva prontos.');
     } else {
         let nextMenu: Menu = thisMenu;
         
-        if(nextMenuName == _back) {
-            nextMenu = _prevMenues.pop()!;
-        } else {
-            if(thisMenu.hasFuncBack) {
-                let backMenuName = thisMenu.menuFunc(thisMenu.name, nextMenuName);
-                log.dump.d({backMenuName});
-                if(backMenuName == '') {
-                    // go back cancelled
-                    gotoNext = true;
-                } else {
-                    let backMenuAux: Menu | undefined = thisMenu;
-                    while(backMenuAux && backMenuAux.name != backMenuName) {
-                        backMenuAux = _prevMenues.pop();
-                    }
-                    if(!backMenuAux) {
-                        _prevMenues = [];
-                        nextMenu = _firstMenu;
-                    } else {
-                        nextMenu = backMenuAux;
-                    }
-                }
-            } else {
-                if(thisMenu.hasFuncNext) {
-                    nextMenuName = thisMenu.menuFunc(thisMenu.name, nextMenuName);
-                }
-                gotoNext = true;
+        if(next.back) {
+            while(next.back) {
+                nextMenu = _prevMenues.pop()!;
+                next.back--;
             }
-        }
-        
-        if(gotoNext) {
-            nextMenu = _allMenues[nextMenuName];
+        } else {
+            if(!next.nextMenu) {
+                throw new Error("Next menu cannot be null");
+            }
+            nextMenu = next.nextMenu;
             log.dump.d({nextMenu});
             _prevMenues.push(thisMenu);
             log.dump.d({_prevMenues});
         }
-        
-        inquirer
-            .prompt([nextMenu])
-            .then(handleAnswer);
+        _currentMenu = nextMenu;
+        inquirer.prompt([nextMenu]).then(handleAnswer);
+    }
+}
+
+function _menuCreateCallback(prompt: any): void {
+    if(!_currentMenu) {
+        throw new Error("Current menu cannot be null");
+    }
+    if(_currentMenu.createFunc) {
+        _currentMenu.createFunc(prompt);
     }
 }
 
 function startProgram(firstMenu: Menu): void {
-    inquirer.registerPrompt('radio', require('./inquirer_radio'));
-
     _firstMenu = firstMenu;
     _makeFirst(firstMenu);
-    
-    log.dump.d({_allMenues});
+    _prevMenues.push(firstMenu);
+
+    _currentMenu = firstMenu;
+
+    inquirer.setCreateCallback(_menuCreateCallback);
     
     inquirer
         .prompt([_firstMenu])
@@ -233,11 +180,15 @@ function startProgram(firstMenu: Menu): void {
  *****************************************************************************/
 
 export {
+    // Const Strings
+    _back,
+    _cancel,
+    _end,
+
     // Classes
     Menu,
     
     // Functions
     create,
-    createBulk,
     startProgram
 };

@@ -1,4 +1,4 @@
-import { log } from '../../utils/index';
+import { log } from '../../utils/index.js';
 
 // eslint-disable-next-line no-new-func
 const importDynamic = new Function('modulePath', 'return import(modulePath)');

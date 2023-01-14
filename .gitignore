@@ -7,7 +7,13 @@ yarn-error.log*
 lerna-debug.log*
 
 # Configuration file
-.config
+.config.json
+
+# Configuration file
+package-lock.json
+
+# All build directory
+build/*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

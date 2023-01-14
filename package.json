@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Program to facilitate logging hours at work in different tasks",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "all": "npm run build; npm run start",
     "build": "tsc",
@@ -28,14 +29,16 @@
   },
   "homepage": "https://github.com/pablo0722/work-logger#readme",
   "dependencies": {
-    "@types/inquirer": "^8.2.1",
+    "@types/inquirer": "github:pablo0722/typed-inquirer",
     "@types/node-fetch": "^2.6.1",
-    "inquirer": "^8.2.2",
+    "all": "^0.0.0",
+    "inquirer": "github:pablo0722/inquirer",
     "node-fetch": "^3.2.3",
     "pkg-fetch": "^3.3.0",
     "typescript": "^4.6.3"
   },
   "devDependencies": {
+    "@sindresorhus/tsconfig": "^3.0.1",
     "@types/node": "^17.0.24"
   }
 }

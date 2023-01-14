@@ -2,8 +2,8 @@
  * IMPORTS
  *****************************************************************************/
 
- import { log } from '../../helpers/utils/index';
- import { file, array } from '../../helpers/utils/index';
+ import { log } from '../../helpers/utils/index.js';
+ import { file, array } from '../../helpers/utils/index.js';
 
 
 
