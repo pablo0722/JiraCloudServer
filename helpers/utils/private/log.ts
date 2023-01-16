@@ -2,7 +2,7 @@
  * GLOBAL CONSTANTS
  *****************************************************************************/
 
-const debug = false;
+const debug = true;
 const info  = true;
 const warn  = true;
 const error = true;

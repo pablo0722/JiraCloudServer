@@ -279,9 +279,23 @@ function jiraUrlGet(arg: urlOptions): string {
     return request;
 }
 
-function jiraUrlPost(issueName: string): string {
+function jiraUrlPostWorklog(issueName: string): string {
     let apiUrl = 'https://mirgor-engineering.atlassian.net/rest/api/3/issue';
     let request = `${apiUrl}/${issueName}/worklog`
+    
+    return request;
+}
+
+function jiraUrlPostComment(issueName: string): string {
+    let apiUrl = 'https://mirgor-engineering.atlassian.net/rest/api/3/issue';
+    let request = `${apiUrl}/${issueName}/comment`
+    
+    return request;
+}
+
+function jiraUrlPostStoryPoints(issueName: string): string {
+    let apiUrl = 'https://mirgor-engineering.atlassian.net/rest/api/3/issue';
+    let request = `${apiUrl}/${issueName}`
     
     return request;
 }
@@ -317,6 +331,23 @@ async function postJiraFromUrl(url: string, data: any): Promise<string> {
     let encoded: string = encodeBase64(deencoded);
     
     ret = await web.postData(url, data, 
+        {
+            'Authorization': `Basic ${encoded}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        });
+    
+    return ret;
+}
+
+async function putJiraFromUrl(url: string, data: any): Promise<string> {
+    let ret: string = '';
+    let credentials = getCredentials();
+    let deencoded = `${credentials.email}:${credentials.api_key}`;
+    let encoded: string = encodeBase64(deencoded);
+    
+    ret = await web.putData(url, data, 
         {
             'Authorization': `Basic ${encoded}`,
             'Content-Type': 'application/json',
@@ -464,6 +495,38 @@ async function getAllOpenSprintIssues(): Promise<string[]> {
     return issues;
 }
 
+async function postVotation(
+    issueName: string,
+    owner: string,
+    votation: string
+): Promise<void> {
+    let url: string = jiraUrlPostComment(issueName);
+    log.dump.d({url});
+    
+    let ret = await postJiraFromUrl(url, {
+            "body": {
+                "type": "doc",
+                "version": 1,
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "text": `OWNER: ${owner}\nTEAM: ${votation}`,
+                                "type": "text"
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+
+    log.d(`POST ret: ${ret}`);
+    if(JSON.parse(ret)["created"]) {
+        log.i(`~ Work logged correctly`);
+    }
+}
+
 async function postLogWork(
     issueName: string,
     day: date.IDate,
@@ -471,7 +534,7 @@ async function postLogWork(
     comment: string,
     time: string | number // in minutes
 ): Promise<string> {
-    let url: string = jiraUrlPost(issueName);
+    let url: string = jiraUrlPostWorklog(issueName);
     log.dump.d({url});
     
     let seconds: number;
@@ -501,7 +564,10 @@ async function postLogWork(
             "timeSpentSeconds": seconds
         });
         
-    log.i('~ Work logged correctly');
+    log.d(`POST ret: ${ret}`);
+    if(JSON.parse(ret)["created"]) {
+        log.i(`~ Work logged correctly`);
+    }
     
     return ret;
 }
@@ -537,5 +603,6 @@ export {
     setCredentialsFile,
     
     // POST
+    postVotation,
     postLogWork
 };

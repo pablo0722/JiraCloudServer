@@ -1,4 +1,4 @@
-import { Vote, Votation, startVotationGetter, stopVotationGetter, getVotation, getCredentials, getMyOpenSprintIssues, getMySprintIssues, getMyOpenIssues, getAllMyIssues, getAllOpenSprintIssues, setCredentials, setCredentialsFile, postLogWork } from './private/webParse.js';
+import { Vote, Votation, startVotationGetter, stopVotationGetter, getVotation, getCredentials, getMyOpenSprintIssues, getMySprintIssues, getMyOpenIssues, getAllMyIssues, getAllOpenSprintIssues, setCredentials, setCredentialsFile, postVotation, postLogWork } from './private/webParse.js';
 
 
 export {
@@ -24,5 +24,6 @@ export {
     setCredentialsFile,
     
     // POST
+    postVotation,
     postLogWork,
 };
