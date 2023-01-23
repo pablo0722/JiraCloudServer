@@ -58,7 +58,16 @@ async function main(): Promise<void> {
     let crearVotacion: menu.Menu = menu.create('list', 'Crear votación', ['VW', 'QUINT'],
         crearVotacionCreateCallback, crearVotacionAnswerCallback);
 
-    let menuPrincipal: menu.Menu = menu.create('list', 'Menú principal', ['Crear votacion'],
+    let resetVotacionVWIssue: menu.Menu = menu.create('input', 'Ingrese el issue de VW', [],
+        resetVotacionVWIssueCreateCallback, resetVotacionVWIssueAnswerCallback);
+
+    let resetVotacionQuintIssue: menu.Menu = menu.create('input', 'Ingrese el issue de QUINT', [],
+        resetVotacionQuintIssueCreateCallback, resetVotacionQuintIssueAnswerCallback);
+
+    let resetVotacion: menu.Menu = menu.create('list', 'Crear votación', ['VW', 'QUINT'],
+        resetVotacionCreateCallback, resetVotacionAnswerCallback);
+
+    let menuPrincipal: menu.Menu = menu.create('list', 'Menú principal', ['Crear votacion', 'Resetear votación'],
         menuPrincipalCreateCallback, menuPrincipalAnswerCallback);
 
     function menuPrincipalCreateCallback(prompt: any) {
@@ -69,7 +78,11 @@ async function main(): Promise<void> {
         {
             return {nextMenu: null, back: 0, end: true};
         }
-        return {nextMenu: crearVotacion, back: 0, end: false};
+        if(nextItem == 'Crear votacion') {
+            return {nextMenu: crearVotacion, back: 0, end: false};
+        } else {
+            return {nextMenu: resetVotacion, back: 0, end: false};
+        }
     }
 
     function crearVotacionCreateCallback(prompt: any) {
@@ -96,6 +109,76 @@ async function main(): Promise<void> {
         return {nextMenu: null, back: 0, end: true};
     }
 
+    function resetVotacionCreateCallback(prompt: any) {
+    }
+
+    function resetVotacionAnswerCallback(nextItem: string|string[]) {
+        if(nextItem == menu._back || nextItem == menu._cancel)
+        {
+            return {nextMenu: null, back: 1, end: false};
+        }
+        else if(nextItem == menu._end)
+        {
+            return {nextMenu: null, back: 0, end: true};
+        }
+        else if(nextItem == 'VW')
+        {
+            return {nextMenu: resetVotacionVWIssue, back: 0, end: false};
+        }
+        else if(nextItem == 'QUINT')
+        {
+            return {nextMenu: resetVotacionQuintIssue, back: 0, end: false};
+        }
+
+        return {nextMenu: null, back: 0, end: true};
+    }
+
+    function resetVotacionQuintIssueCreateCallback(prompt: any) {
+    }
+
+    function resetVotacionQuintIssueAnswerCallback(nextItem: string|string[]) {
+        if(nextItem == menu._back || nextItem == menu._cancel)
+        {
+            return {nextMenu: null, back: 1, end: false};
+        }
+        else if(nextItem == menu._end)
+        {
+            return {nextMenu: null, back: 0, end: true};
+        }
+
+        if(Array.isArray(nextItem)) {
+            nextItem = nextItem[0];
+        }
+
+        _issue = `FAMPQNTDEV-${nextItem}`;
+        webParse.rmVotationGetter(_issue);
+
+        return {nextMenu: null, back: 2, end: false};
+    }
+
+    function resetVotacionVWIssueCreateCallback(prompt: any) {
+    }
+
+    function resetVotacionVWIssueAnswerCallback(nextItem: string|string[]) {
+        if(nextItem == menu._back || nextItem == menu._cancel)
+        {
+            return {nextMenu: null, back: 1, end: false};
+        }
+        else if(nextItem == menu._end)
+        {
+            return {nextMenu: null, back: 0, end: true};
+        }
+
+        if(Array.isArray(nextItem)) {
+            nextItem = nextItem[0];
+        }
+
+        _issue = `FAMPVW-${nextItem}`;
+        webParse.rmVotationGetter(_issue);
+
+        return {nextMenu: null, back: 2, end: false};
+    }
+
     function votacionVWIssueCreateCallback(prompt: any) {
     }
 
@@ -114,6 +197,9 @@ async function main(): Promise<void> {
         }
 
         _issue = `FAMPVW-${nextItem}`;
+
+        console.log("Cópiale el siguiente link a los votantes:");
+        console.log(`https://enterprise-tools.vercel.app/scrum_poker/create?issue=${_issue}`);
 
         return {nextMenu: votacionVW, back: 0, end: false};
     }
@@ -137,6 +223,9 @@ async function main(): Promise<void> {
 
         _issue = `FAMPQNTDEV-${nextItem}`;
 
+        console.log("Cópiale el siguiente link a los votantes:");
+        console.log(`https://enterprise-tools.vercel.app/scrum_poker/create?issue=${_issue}`);
+
         return {nextMenu: votacionQuint, back: 0, end: false};
     }
 
@@ -157,15 +246,54 @@ async function main(): Promise<void> {
             return {nextMenu: null, back: 0, end: true};
         }
 
+        let pointList: {[key: string]: string} = {XS: "2", S: "3", M: "5", L: "8", XL: "13"};
+        let pointResult: {[key: string]: number} = {XS: 0, S: 0, M: 0, L: 0, XL: 0};
+
         let owner: string = "";
         let votation = _votation.map((v)=> {return v.split(": ")[1]}).join(" ");
         _votation.forEach((v) => {
+            let vote = v.split(": ")[1];
+            pointResult[vote]+=1;
             if(nextItem == v) {
-                owner = v.split(": ")[1];
+                owner = vote;
             }
         });
 
-        webParse.postVotation(_issue, owner, votation);
+        let storyKeys: string[] = [];
+        let storyValue: number = -1;
+
+        for (const [key, value] of Object.entries(pointResult)) {
+            if(value > storyValue) {
+                storyKeys = [key];
+                storyValue = value;
+            } else if(value == storyValue) {
+                storyKeys.push(key);
+            }
+        }
+
+        let storyPoints: string = "";
+        let error: string = "";
+
+        if(storyKeys.length == 1) {
+            storyPoints = pointList[storyKeys[0]];
+        } else if(storyKeys.length > 1) {
+            if(storyKeys.includes(owner)) {
+                storyPoints = pointList[owner];
+            } else {
+                error = "Hay empate y el owner no desempata.";
+            }
+        } else {
+            error = "No se registraron votos.";
+        }
+
+        if(storyPoints == "") {
+            // Error in votation: go back
+            console.log(`Error: resultado de votación incorrecta. ${error}`);
+            return {nextMenu: null, back: 0, end: false};
+        }
+
+        webParse.postVotation(_issue, owner, votation, storyPoints);
+        webParse.rmVotationGetter(_issue);
 
         return {nextMenu: null, back: 2, end: false};
     }
@@ -186,6 +314,17 @@ async function main(): Promise<void> {
         {
             return {nextMenu: null, back: 0, end: true};
         }
+
+        let owner: string = "";
+        let votation = _votation.map((v)=> {return v.split(": ")[1]}).join(" ");
+        _votation.forEach((v) => {
+            if(nextItem == v) {
+                owner = v.split(": ")[1];
+            }
+        });
+
+        webParse.postVotation(_issue, owner, votation, "");
+        webParse.rmVotationGetter(_issue);
 
         return {nextMenu: null, back: 2, end: false};
     }

@@ -124,20 +124,17 @@ function handleAnswer(ans: Answer): void {
     let next: NextAnswer;
     next = thisMenu.answerFunc(answer);
 
-    if(next.end || (!next.back && !next.nextMenu)) {
+    if(next.end) {
         log.i('Gracias, vuelva prontos.');
     } else {
         let nextMenu: Menu = thisMenu;
         
-        if(next.back) {
+        if(!next.nextMenu) {
             while(next.back) {
                 nextMenu = _prevMenues.pop()!;
                 next.back--;
             }
         } else {
-            if(!next.nextMenu) {
-                throw new Error("Next menu cannot be null");
-            }
             nextMenu = next.nextMenu;
             log.dump.d({nextMenu});
             _prevMenues.push(thisMenu);

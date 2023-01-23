@@ -374,10 +374,15 @@ function startVotationGetter(votation_name: string, func: (votation: Votation) =
 function stopVotationGetter(): void {
     _votation_running = false;
 }
+
+async function rmVotationGetter(votation_name: string): Promise<void> {
+    storage.remove(`scrumpoker_${votation_name}`);
+}
+
 let i=0;
 async function getVotation(func: (votation: Votation) => void, votation_name: string): Promise<void> {
     while(_votation_running) {
-        let response: Votation = JSON.parse(await storage.get(`scrumpoker_celda_${votation_name}`));
+        let response: Votation = JSON.parse(await storage.get(`scrumpoker_${votation_name}`));
         func(response);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -498,11 +503,12 @@ async function getAllOpenSprintIssues(): Promise<string[]> {
 async function postVotation(
     issueName: string,
     owner: string,
-    votation: string
+    votation: string,
+    storyPoints: string
 ): Promise<void> {
     let url: string = jiraUrlPostComment(issueName);
     log.dump.d({url});
-    
+
     let ret = await postJiraFromUrl(url, {
             "body": {
                 "type": "doc",
@@ -512,7 +518,7 @@ async function postVotation(
                         "type": "paragraph",
                         "content": [
                             {
-                                "text": `OWNER: ${owner}\nTEAM: ${votation}`,
+                                "text": `OWNER: ${owner}\nTEAM: ${votation}\nStory Points: ${storyPoints}`,
                                 "type": "text"
                             }
                         ]
@@ -604,5 +610,8 @@ export {
     
     // POST
     postVotation,
-    postLogWork
+    postLogWork,
+
+    // REMOVE
+    rmVotationGetter
 };
