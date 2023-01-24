@@ -199,7 +199,7 @@ async function main(): Promise<void> {
         _issue = `FAMPVW-${nextItem}`;
 
         console.log("Cópiale el siguiente link a los votantes:");
-        console.log(`https://enterprise-tools.vercel.app/scrum_poker/create?issue=${_issue}`);
+        console.log(`https://enterprise-tools.vercel.app/scrum_poker/vote?issue=${_issue}`);
 
         return {nextMenu: votacionVW, back: 0, end: false};
     }
